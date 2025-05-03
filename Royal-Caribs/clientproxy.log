@@ -1,0 +1,10 @@
+nohup: ignoring input
+Error in client proxy,looks like no internet today!java.net.UnknownHostException: compassionate_wilbur
+java.net.UnknownHostException: compassionate_wilbur
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:589)
+	at java.net.Socket.connect(Socket.java:538)
+	at java.net.Socket.<init>(Socket.java:434)
+	at java.net.Socket.<init>(Socket.java:211)
+	at main.java.com.royalcaribs.main.ClientProxyMain.main(ClientProxyMain.java:24)
