@@ -15,7 +15,7 @@ public class ClientProxyMain {
 
 	private static final int SERVER_PORT = 9090;
 
-	private static final String SERVER_HOST = "127.0.0.1";
+	private static final String SERVER_HOST = "serverproxy";
 
 	private static ServerSocket proxyListner;
 
