@@ -25,7 +25,7 @@ So we designed a proxy system where:
 
 - **Language:** Java  
 - **Responsibilities:**
-  - Accept HTTP requests over local sockets (from browsers or internal applications).
+  - Accept HTTP requests over local sockets (from browsers in the ship).
   - Use two threads:
     - **Listener Thread:** Accepts and enqueues incoming HTTP requests into a **blocking queue** (FIFO).
     - **Sender Thread:** Dequeues requests and sends them to the server proxy via a **single TCP connection**.
