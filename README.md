@@ -68,7 +68,7 @@ So we designed a proxy system where:
 - **Single Point of Failure**:  
   If the server proxy goes down, all HTTP communication from the ship halts, since there's only one persistent TCP connection.
 - **Latency Considerations**:  
-  Since all traffic is funneled through a single connection and possibly one thread, there could be delays under heavy load.
+  Since all traffic is funneled through a single connection and sequential, there could be delays under heavy load.
 
 - **No Built-in Authentication**:  
   There's no mechanism in place to verify the identity of the client proxy. This could be a security risk if the system is deployed outside a trusted network.
