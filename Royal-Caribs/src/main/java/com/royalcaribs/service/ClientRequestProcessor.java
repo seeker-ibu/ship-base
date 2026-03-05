@@ -39,26 +39,23 @@ public class ClientRequestProcessor implements RequestProcessor, Runnable {
 			BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( inputStream ) );
 			String requestLine = bufferedReader.readLine();
 
-			Request request = ( SimpleRequest ) prepareRequest( requestLine, bufferedReader );
+			Request request = prepareRequest( requestLine, bufferedReader );
 
 			orchestrator.sendMessage( objectOutputStream, request );
 
 			Response response = ( SimpleResponse ) orchestrator.recieveMessage( objectInputStream );
 
 			sendBackToUsers( response, outputStream );
-
 		}
 		catch ( Exception e ) {
 			System.out.println( "Error occured while processing" );
 			e.printStackTrace();
 		}
-
 	}
 
 	@Override
 	public void run() {
 		queueManager.add( this );
-
 	}
 
 	private Request prepareRequest( String requestLine, BufferedReader reader ) {
@@ -77,8 +74,24 @@ public class ClientRequestProcessor implements RequestProcessor, Runnable {
 				int idx = line.indexOf( ":" );
 				headers.put( line.substring( 0, idx ).trim(), line.substring( idx + 1 ).trim() );
 			}
+
+			byte[] body = null;
+			String contentLengthStr = headers.get( "Content-Length" );
+			if ( contentLengthStr != null ) {
+				int contentLength = Integer.parseInt( contentLengthStr.trim() );
+				char[] chars = new char[contentLength];
+				int totalRead = 0;
+				while ( totalRead < contentLength ) {
+					int read = reader.read( chars, totalRead, contentLength - totalRead );
+					if ( read == -1 )
+						break;
+					totalRead += read;
+				}
+				body = new String( chars, 0, totalRead ).getBytes( "UTF-8" );
+			}
+
 			System.out.println( "Requesting for url " + url );
-			request = new SimpleRequest( method, url, headers, null );
+			request = new SimpleRequest( method, url, headers, body );
 		}
 		catch ( Exception e ) {
 			System.out.println( "Error occured while preapring the client request " + e );
@@ -96,7 +109,6 @@ public class ClientRequestProcessor implements RequestProcessor, Runnable {
 			}
 			writer.printf( "Content-Length: %d\r\n", response.getBody().length );
 			writer.print( "\r\n" );
-
 			writer.flush();
 
 			outputStream.write( response.getBody() );
@@ -106,7 +118,6 @@ public class ClientRequestProcessor implements RequestProcessor, Runnable {
 			System.out.println( "Error occured while sending back response to the users" + e );
 			e.printStackTrace();
 		}
-
 	}
 
 }

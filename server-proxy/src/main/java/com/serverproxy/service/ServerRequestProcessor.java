@@ -2,6 +2,8 @@ package main.java.com.serverproxy.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.HttpURLConnection;
@@ -16,6 +18,8 @@ import main.java.com.common.request.SimpleRequest;
 import main.java.com.common.response.SimpleResponse;
 
 public class ServerRequestProcessor implements RequestProcessor, Runnable {
+
+	public static final int EIGHT_KB = 8192;
 
 	private ObjectInputStream objectInputStream;
 
@@ -42,12 +46,11 @@ public class ServerRequestProcessor implements RequestProcessor, Runnable {
 		try {
 			while ( true ) {
 				Request request = ( SimpleRequest ) objectInputStream.readObject();
-
 				String rawUrl = request.getUrl();
-
 				if ( !rawUrl.startsWith( "http://" ) && !rawUrl.startsWith( "https://" ) ) {
 					rawUrl = "https://" + rawUrl;
 				}
+
 				HttpURLConnection connection = ( HttpURLConnection ) new URL( rawUrl ).openConnection();
 				connection.setRequestMethod( request.getMethod() );
 
@@ -56,23 +59,26 @@ public class ServerRequestProcessor implements RequestProcessor, Runnable {
 				}
 
 				connection.setDoInput( true );
-				byte[] responseBody;
-				int statusCode;
 
-				try (InputStream inputStream = connection.getInputStream();
-						ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-					byte[] temp = new byte[1024];
-					int n;
-					while ( ( n = inputStream.read( temp ) ) != -1 ) {
-						buffer.write( temp, 0, n );
+				byte[] requestBody = request.getBody();
+				if ( requestBody != null && requestBody.length > 0 ) {
+					connection.setDoOutput( true );
+					try (OutputStream reqOut = connection.getOutputStream()) {
+						reqOut.write( requestBody );
+						reqOut.flush();
 					}
-					responseBody = buffer.toByteArray();
-					statusCode = connection.getResponseCode();
 				}
 
-				SimpleResponse response = new SimpleResponse();
-				response.setStatus( statusCode );
-				response.setBody( responseBody );
+				int statusCode = connection.getResponseCode();
+
+				InputStream responseStream = ( statusCode >= 400 ) ? connection.getErrorStream() : connection.getInputStream();
+
+				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+				byte[] temp = new byte[EIGHT_KB];
+				int n;
+				while ( ( n = responseStream.read( temp ) ) != -1 ) {
+					buffer.write( temp, 0, n );
+				}
 
 				Map<String, List<String>> rawHeaders = connection.getHeaderFields();
 				Map<String, String> responseHeaders = new HashMap<>();
@@ -83,15 +89,20 @@ public class ServerRequestProcessor implements RequestProcessor, Runnable {
 						responseHeaders.put( key, String.join( ", ", value ) );
 					}
 				}
+
+				SimpleResponse response = new SimpleResponse();
+				response.setStatus( statusCode );
+				response.setBody( buffer.toByteArray() );
 				response.setHeaders( responseHeaders );
 
 				orchestrator.sendMessage( objectOutputStream, response );
+
+				objectOutputStream.reset();
 			}
 		}
 		catch ( Exception e ) {
-			System.out.println( "Error occured while processing the request or response" );
+			System.out.println( "Error occurred while processing the request or response" );
 			e.printStackTrace();
 		}
 	}
-
 }
